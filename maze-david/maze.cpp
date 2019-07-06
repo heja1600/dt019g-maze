@@ -11,18 +11,44 @@ Maze::Maze(const size_t x, const size_t y)
 			this->matrix[x][y] = new Cell(x, y);
 		}
 	}
+
+	
 }
 
 
-void Maze::addNeighbours()
+bool Maze::addNeighbour(Cell * cell)
 {
-	this->addLeft(this->stack.top());
 
-	this->addBottom(this->stack.top());
+	auto adder = [=](size_t dir, Cell* cell) {
+		switch (dir)
+		{
+		case TOP: {
+			if (this->addTop(cell)) return true;
+			break;
+		}
+		case RIGHT: {
+			if (this->addRight(cell)) return true;
+			break;
+		}
+		case BOT: {
+			if (this->addBottom(cell)) return true;
+			break;
+		}
+		case LEFT: {
+			if (this->addLeft(cell)) return true;
+			break;
+		}
+		}
+		return false;
+	};
 
-	this->addRight(this->stack.top());
+	std::vector<size_t> dir = { RIGHT, TOP, BOT, LEFT };
+	std::random_shuffle(dir.begin(), dir.end());
+	for (auto &e : dir) {
+		if (adder(e, cell)) return true;
+	}
 
-	this->addTop(this->stack.top());
+	return false;
 }
 
 
@@ -32,76 +58,87 @@ void Maze::generate(const size_t startX, const size_t startY)
 
 	startCell->visited = true;
 
-	this->stack.push(startCell);
+	this->stack.push_back(startCell);
+
 
 	while (true)
 	{
-		Cell* currentCell = this->stack.top();
-		this->addNeighbours();
-		if (currentCell == this->stack.top())
+
+		if (!this->addNeighbour(this->stack.back()))
 		{
-			this->stack.pop();
+			this->stack.pop_back();
 		}
-		if (currentCell == startCell)
+		if (this->stack.empty())
 		{
 			break;
 		}
+
+
 	}
 	this->print();
+
 }
 
-void Maze::addLeft(const Cell* cell)
+bool Maze::addLeft(const Cell * cell)
 {
-	if (this->isOutOfSpace(cell->x - 1, cell->y))
+	if (!this->isOutOfSpace(cell->x - 1, cell->y))
 	{
 		Cell* leftCell = this->matrix[cell->x - 1][cell->y];
-		if (!leftCell->visited)
+		if (checkNeighbours(cell, leftCell))
 		{
 			leftCell->visited = true;
-			this->stack.push(leftCell);
+			this->stack.push_back(leftCell);
+			return true;
 		}
 	}
+	return false;
 }
 
 
-void Maze::addRight(const Cell* cell)
+bool Maze::addRight(const Cell * cell)
 {
-	if (this->isOutOfSpace(cell->x + 1, cell->y))
+	if (!this->isOutOfSpace(cell->x + 1, cell->y))
 	{
-		Cell* rightCell = this->matrix[cell->x + 1][cell->y];
-		if (!rightCell->visited)
+		Cell * rightCell = this->matrix[cell->x + 1][cell->y];
+		if (checkNeighbours(cell, rightCell))
 		{
 			rightCell->visited = true;
-			this->stack.push(rightCell);
+			this->stack.push_back(rightCell);
+			return true;
 		}
 	}
+	return false;
 }
 
-void Maze::addBottom(const Cell* cell)
+bool Maze::addBottom(const Cell * cell)
 {
-	if (this->isOutOfSpace(cell->x, cell->y -1))
+	if (!this->isOutOfSpace(cell->x, cell->y - 1))
 	{
-		Cell* bottomCell = this->matrix[cell->x][cell->y - 1];
-		if (!bottomCell->visited)
+		Cell * bottomCell = this->matrix[cell->x][cell->y - 1];
+		if (checkNeighbours(cell, bottomCell))
 		{
 			bottomCell->visited = true;
-			this->stack.push(bottomCell);
+			this->stack.push_back(bottomCell);
+			return true;
 		}
 	}
+	return false;
 }
 
 
-void Maze::addTop(const Cell* cell)
+bool Maze::addTop(const Cell * cell)
 {
-	if (this->isOutOfSpace(cell->x, cell->y + 1))
+	if (!this->isOutOfSpace(cell->x, cell->y + 1))
 	{
 		Cell* topCell = this->matrix[cell->x][cell->y + 1];
-		if (!topCell->visited)
+		if (checkNeighbours(cell, topCell))
 		{
 			topCell->visited = true;
-			this->stack.push(topCell);
+			this->stack.push_back(topCell);
+			return true;
 		}
 	}
+	return false;
 }
 
 
@@ -119,6 +156,53 @@ void Maze::print() const
 bool Maze::checkNeighbours(const Cell* prevCell, const Cell* checkCell) const
 {
 
+	if (checkCell->visited) return false;
+
+	auto canBeAdded = [prevCell](const Cell* cell) {
+		if (prevCell == cell)
+		{
+			return true;
+		}
+		return !cell->visited;
+	};
+
+	// check right
+	if (!isOutOfSpace(checkCell->x + 1, checkCell->y))
+	{
+		if (!canBeAdded(matrix[checkCell->x + 1][checkCell->y]))
+		{
+			return false;
+		}
+	}
+
+	// check left
+	if (!isOutOfSpace(checkCell->x - 1, checkCell->y))
+	{
+		if (!canBeAdded(matrix[checkCell->x - 1][checkCell->y]))
+		{
+			return false;
+		}
+	}
+
+	// check top
+	if (!isOutOfSpace(checkCell->x, checkCell->y + 1))
+	{
+		if (!canBeAdded(matrix[checkCell->x][checkCell->y + 1]))
+		{
+			return false;
+		}
+	}
+
+	// check bottom
+	if (!isOutOfSpace(checkCell->x, checkCell->y - 1))
+	{
+		if (!canBeAdded(matrix[checkCell->x][checkCell->y - 1]))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 

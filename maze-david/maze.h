@@ -4,11 +4,17 @@
 #include <stack>
 #include <algorithm>
 #include <iostream>
+#include <functional>
 
 #define START_X 0
 #define START_Y 0
 
-
+enum {
+	LEFT,
+	RIGHT,
+	TOP,
+	BOT
+};
 
 struct Cell {
 	bool visited;
@@ -31,15 +37,15 @@ public:
 
 private:
 
-	void addLeft(const Cell* cell);
+	bool addLeft(const Cell* cell);
 
-	void addRight(const Cell* cell);
+	bool addRight(const Cell* cell);
 
-	void addBottom(const Cell* cell);
+	bool addBottom(const Cell* cell);
 
-	void addTop(const Cell* cell);
+	bool addTop(const Cell* cell);
 
-	void addNeighbours();
+	bool addNeighbour(Cell * cell);
 
 	bool checkNeighbours(const Cell* prevCell, const Cell * cell) const;
 
@@ -47,6 +53,8 @@ private:
 
 	std::vector<std::vector<Cell*>> matrix;
 
-	std::stack<Cell*> stack;
+	std::vector<Cell*> stack;
+
+	std::vector<std::function<bool(Cell*)>> adder;
 };
 
