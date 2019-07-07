@@ -9,17 +9,14 @@
 #define START_X 0
 #define START_Y 0
 
-enum {
-	LEFT,
-	RIGHT,
-	TOP,
-	BOT
-};
+#define UP 1
+#define DOWN -1
+#define SAME 0
 
 struct Cell {
 	bool visited;
-	size_t x; 
-	size_t y;
+	std::size_t x; 
+	std::size_t y;
 	Cell(const size_t x, const size_t y): x(x), y(y),visited(false) {}
 };
 
@@ -37,13 +34,7 @@ public:
 
 private:
 
-	bool addLeft(const Cell* cell);
-
-	bool addRight(const Cell* cell);
-
-	bool addBottom(const Cell* cell);
-
-	bool addTop(const Cell* cell);
+	bool addCell(const Cell* cell, const size_t xChange, const size_t yChange);
 
 	bool addNeighbour(Cell * cell);
 
@@ -53,8 +44,8 @@ private:
 
 	std::vector<std::vector<Cell*>> matrix;
 
-	std::vector<Cell*> stack;
+	std::stack<Cell*> stack;
 
-	std::vector<std::function<bool(Cell*)>> adder;
+	std::vector<std::function<bool(Cell*)>> addMethods;
 };
 
