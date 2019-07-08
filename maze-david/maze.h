@@ -5,20 +5,21 @@
 #include <algorithm>
 #include <iostream>
 #include <functional>
+#include <cstdlib>
+#include <ctime>
 
-#define START_X 0
-#define START_Y 0
 
-#define UP 1
-#define DOWN -1
-#define SAME 0
+
+#define START_X 1
+#define START_Y 1
 
 struct Cell {
 	bool visited;
 	std::size_t x; 
 	std::size_t y;
-	Cell(const size_t x, const size_t y): x(x), y(y),visited(false) {}
+	Cell(const size_t x, const size_t y): x(x), y(y), visited(false) {}
 };
+
 
 class Maze
 {
@@ -28,7 +29,7 @@ public:
 
 	void generate(const size_t startX = START_X, const size_t startY = START_Y);
 
-	void solve(std::vector<std::vector<Cell*>> matrix);
+	void solve();
 
 	void print() const;
 

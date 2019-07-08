@@ -13,10 +13,10 @@ Maze::Maze(const std::size_t x, const std::size_t y)
 	}
 
 	// bind direction functions
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, UP, SAME)); 
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, DOWN, SAME));
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, SAME, UP));
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, SAME, DOWN));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, 1, 0)); 
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, -1, 0));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, 0, 1));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, 0, -1));
 
 }
 
@@ -42,19 +42,13 @@ void Maze::generate(const size_t startX, const size_t startY)
 	this->stack.push(startCell);
 
 
-	while (true)
+	while (!this->stack.empty())
 	{
 
 		if (!this->addNeighbour(this->stack.top()))
 		{
 			this->stack.pop();
 		}
-		if (this->stack.empty())
-		{
-			break;
-		}
-
-
 	}
 	this->print();
 
