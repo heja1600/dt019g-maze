@@ -4,7 +4,8 @@
 
 int main()
 {
-	Maze maze(31, 31);
+	Maze maze(25, 50);
 	maze.generate();
+	maze.solve();
 	return EXIT_SUCCESS;
 }

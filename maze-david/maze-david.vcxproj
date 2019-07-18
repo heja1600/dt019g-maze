@@ -127,6 +127,7 @@
     <ClCompile Include="maze.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="colorModifier.h" />
     <ClInclude Include="maze.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

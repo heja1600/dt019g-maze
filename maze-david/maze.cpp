@@ -1,5 +1,6 @@
 #include "maze.h"
 
+using Cmp = const std::function<bool(const Cell*, const Cell*)>;
 
 Maze::Maze(const std::size_t x, const std::size_t y)
 	: matrix(std::vector<std::vector<Cell*>>(x, std::vector<Cell*>(y)))
@@ -12,21 +13,32 @@ Maze::Maze(const std::size_t x, const std::size_t y)
 		}
 	}
 
+	matrix[START_X][START_Y]->startPoint = true;
+
 	// bind direction functions
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, 1, 0)); 
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, -1, 0));
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, 0, 1));
-	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, 0, -1));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, std::placeholders::_2, 1, 0));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, std::placeholders::_2, -1, 0));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, std::placeholders::_2, 0, 1));
+	this->addMethods.push_back(std::bind(&Maze::addCell, this, std::placeholders::_1, std::placeholders::_2, 0, -1));
 
 }
 
+Maze::~Maze()
+{
+	std::for_each(matrix.begin(), matrix.end(), [](std::vector<Cell*>& row) {
+		std::for_each(row.begin(), row.end(), [](Cell* cell) {
+			delete cell;
+			});
+		});
+}
 
-bool Maze::addNeighbour(Cell * cell)
+
+bool Maze::addNeighbour(Cell * cell, Cmp &cmp)
 {
 	std::random_shuffle(addMethods.begin(), addMethods.end());
 
 	for (auto &add : addMethods) {
-		if (add(cell)) return true;
+		if (add(cell, cmp)) return true;
 	}
 
 	return false;
@@ -37,15 +49,16 @@ void Maze::generate(const size_t startX, const size_t startY)
 {
 	Cell* startCell = this->matrix[startX][startY];
 
-	startCell->visited = true;
+	startCell->path = true;
 
 	this->stack.push(startCell);
 
+	Cmp cmp = std::bind(&Maze::checkNeighbours, this, std::placeholders::_1, std::placeholders::_2);
 
 	while (!this->stack.empty())
 	{
-
-		if (!this->addNeighbour(this->stack.top()))
+		this->stack.top()->path = true;
+		if (!this->addNeighbour(this->stack.top(), cmp))
 		{
 			this->stack.pop();
 		}
@@ -54,15 +67,38 @@ void Maze::generate(const size_t startX, const size_t startY)
 
 }
 
+void Maze::solve()
+{
+	this->stack.push(matrix[START_X][START_Y]);
+	this->setEndPoint();
 
-bool Maze::addCell(const Cell* cell, const size_t xChange, const size_t yChange)
+	Cmp cmp = [](const Cell* prevCell, const Cell* checkCell) {
+		return checkCell->path && checkCell != prevCell && !checkCell->visited;
+	};
+
+	while (!stack.top()->endPoint)
+	{
+		this->stack.top()->visited = true;
+
+		if (!addNeighbour(stack.top(), cmp)) this->stack.pop();
+	}
+	while (!stack.empty())
+	{
+		stack.top()->solvePath = true;
+		stack.pop();
+	}
+	print();
+
+}
+
+
+bool Maze::addCell(const Cell* cell, Cmp & cmp, const size_t xChange, const size_t yChange)
 {
 	if (!this->isOutOfSpace(cell->x + xChange, cell->y + yChange))
 	{
 		Cell* existingCell = this->matrix[cell->x + xChange][cell->y + yChange];
-		if (checkNeighbours(cell, existingCell))
+		if (cmp(cell, existingCell))
 		{
-			existingCell->visited = true;
 			this->stack.push(existingCell);
 			return true;
 		}
@@ -75,21 +111,26 @@ bool Maze::addCell(const Cell* cell, const size_t xChange, const size_t yChange)
 
 void Maze::print() const
 {
-	std::for_each(matrix.begin(), matrix.end(), [](const std::vector<Cell*> row) {
-		std::for_each(row.begin(), row.end(), [](const Cell* cell){
-			std::cout << (cell->visited ? " " : "#");
+	Color::Modifier bgRed(Color::BG_RED), bgGreen(Color::BG_GREEN), bgBlue(Color::BG_BLUE), bgD(Color::BG_DEFAULT);
+	std::for_each(matrix.begin(), matrix.end(), [=](const std::vector<Cell*> row) {
+		std::for_each(row.begin(), row.end(), [=](const Cell* cell){
+			if (cell->startPoint) std::cout << bgBlue << "  ";
+			else if (cell->endPoint) std::cout << bgBlue << "  ";
+			else if (cell->solvePath) std::cout << bgGreen << "  ";
+			else if (cell->path) std::cout << bgD << "  ";
+			else std::cout << bgRed << "  ";
 		});
 		std::cout << std::endl;
-		
 	});
+	std::cout << bgD << std::endl << std::endl;
 }
 
 bool Maze::checkNeighbours(const Cell* prevCell, const Cell* checkCell) const
 {
 
-	if (checkCell->visited) return false;
+	if (checkCell->path) return false;
 
-	auto canBeAdded = [prevCell](const Cell* cell) { return prevCell == cell ? true : !cell->visited; };
+	auto canBeAdded = [prevCell](const Cell* cell) { return prevCell == cell ? true : !cell->path; };
 
 	// check right
 	if (!isOutOfSpace(checkCell->x + 1, checkCell->y))
@@ -141,4 +182,19 @@ bool Maze::isOutOfSpace(const std::size_t x, const std::size_t y) const {
 		return true;
 	}
 	return false;
+}
+
+void Maze::setEndPoint()
+{
+	for (size_t x = matrix.size() - 3; x < matrix.size(); x++)
+	{
+		for (size_t y = matrix.front().size() - 3; y < matrix.front().size(); y++)
+		{
+			if (matrix[x][y]->path)
+			{
+				matrix[x][y]->endPoint = true;
+				return;
+			}
+		}
+	}
 }
